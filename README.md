@@ -2,7 +2,7 @@
 
 Парсер каталога **lenta.com** на Go. Бьёт по внутреннему JSON API
 `POST https://lenta.com/api-gateway/v1/catalog/items/selections`,
-работает в чистом серверном режиме (без headless-браузера), через прокси.
+через прокси.
 
 ## Возможности
 
@@ -24,8 +24,7 @@ go run . -out out/products.json
 ## Локальный прокси через tinyproxy
 
 Для тестового запуска / демонстрации требование «обязательно через прокси»
-можно закрыть локальным tinyproxy. Для продакшн-парсинга нужен внешний RU IPv4
-(см. секцию «Замечания по антибот-защите» ниже).
+можно закрыть локальным tinyproxy.
 
 ```bash
 brew install tinyproxy
@@ -85,7 +84,7 @@ pkill tinyproxy
 {
   "generated_at": "2026-05-10T15:00:00Z",
   "source": "lenta.com",
-  "total_count": 48,
+  "total_count": 66,
   "categories": [
     {
       "id": 310002385,
@@ -106,15 +105,30 @@ pkill tinyproxy
           "category_name": "Фрукты"
         }
       ]
+    },
+    {
+      "id": 310003460,
+      "name": "Хлеб и булочки",
+      "products": [
+        {
+          "id": 62736,
+          "name": "Хлеб ХЛЕБНЫЙ ДОМ Геркулес зерновой, в нарезке, 500г",
+          "url": "https://lenta.com/product/hleb-gerkules-zernovojj-v-narezke-rossiya-500g-62736/",
+          "price": 139.99,
+          "price_regular": 139.99,
+          "has_discount": false,
+          "unit": "шт",
+          "unit_quantity": 1,
+          "rating": 4.8,
+          "rating_votes": 1532,
+          "category_id": 310003460,
+          "category_name": "Хлеб и булочки"
+        }
+      ]
     }
   ]
 }
 ```
-
-Цены — в рублях (API отдаёт в копейках; делим на 100).
-Для весовых товаров `price` — это цена за `unit_quantity` `unit` (например,
-0.2 кг). Цена за килограмм / штуку находится в `prices.cost` исходного API
-и при необходимости легко добавляется в выходную структуру.
 
 ## Структура проекта
 
@@ -130,15 +144,3 @@ pkill tinyproxy
 │   └── output/json.go               # запись JSON
 └── out/                             # игнорируется git
 ```
-
-## Замечания по антибот-защите
-
-Перед `lenta.com` стоит **Qrator Labs** (видно по `Server: QRATOR`).
-Простые curl-запросы со всеми скопированными заголовками проходят 200 OK,
-но если сессионные cookies протухли — Qrator может отдать challenge-страницу.
-В таком случае обновите `.env` свежими значениями из браузера.
-
-Если запросы начнут массово 403/429:
-- увеличьте паузы (`politeSleep` в `scraper.go`)
-- смените прокси
-- обновите cookies
