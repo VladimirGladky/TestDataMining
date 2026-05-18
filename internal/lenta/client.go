@@ -22,11 +22,12 @@ const (
 
 type Client struct {
 	httpClient *http.Client
+	session    *Session
 	cfg        *config.Config
 	retries    int
 }
 
-func NewClient(cfg *config.Config) (*Client, error) {
+func NewClient(cfg *config.Config, session *Session) (*Client, error) {
 	proxyURL, err := url.Parse(cfg.ProxyURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse proxy url: %w", err)
@@ -37,7 +38,6 @@ func NewClient(cfg *config.Config) (*Client, error) {
 		MaxIdleConns:        10,
 		IdleConnTimeout:     30 * time.Second,
 		TLSHandshakeTimeout: 15 * time.Second,
-		DisableCompression:  false,
 	}
 
 	return &Client{
@@ -45,6 +45,7 @@ func NewClient(cfg *config.Config) (*Client, error) {
 			Transport: transport,
 			Timeout:   time.Duration(cfg.RequestTimeout) * time.Second,
 		},
+		session: session,
 		cfg:     cfg,
 		retries: cfg.RetryAttempts,
 	}, nil
@@ -136,12 +137,12 @@ func (c *Client) applyHeaders(req *http.Request) {
 	h.Set("sec-fetch-dest", "empty")
 	h.Set("sec-fetch-mode", "cors")
 	h.Set("sec-fetch-site", "same-origin")
-	h.Set("user-agent", c.cfg.UserAgent)
-	h.Set("cookie", c.cfg.Cookie)
-	h.Set("deviceid", c.cfg.DeviceID)
-	h.Set("sessiontoken", c.cfg.SessionToken)
-	h.Set("x-device-id", c.cfg.DeviceID)
-	h.Set("x-user-session-id", c.cfg.UserSessionID)
+	h.Set("user-agent", c.session.UserAgent)
+	h.Set("cookie", c.session.Cookie)
+	h.Set("deviceid", c.session.DeviceID)
+	h.Set("sessiontoken", c.session.SessionToken)
+	h.Set("x-device-id", c.session.DeviceID)
+	h.Set("x-user-session-id", c.session.UserSessionID)
 	h.Set("x-delivery-mode", c.cfg.DeliveryMode)
 	h.Set("x-domain", c.cfg.Domain)
 	h.Set("x-device-os", "Web")

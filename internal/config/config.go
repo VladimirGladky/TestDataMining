@@ -6,19 +6,18 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
-	Cookie          string
-	DeviceID        string
-	SessionToken    string
-	UserSessionID   string
-	UserAgent       string
 	ProxyURL        string
+	StoreQuery      string
 	SelectionIDs    []int64
 	SelectionNames  map[int64]string
 	DeliveryMode    string
 	Domain          string
+	UserAgent       string
+	BootstrapWait   time.Duration
 	RequestTimeout  int
 	PageLimit       int
 	RetryAttempts   int
@@ -30,14 +29,12 @@ func Load(envPath string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		Cookie:         os.Getenv("LENTA_COOKIE"),
-		DeviceID:       os.Getenv("LENTA_DEVICE_ID"),
-		SessionToken:   os.Getenv("LENTA_SESSION_TOKEN"),
-		UserSessionID:  os.Getenv("LENTA_USER_SESSION_ID"),
-		UserAgent:      getEnvDefault("LENTA_USER_AGENT", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"),
 		ProxyURL:       os.Getenv("PROXY_URL"),
+		StoreQuery:     os.Getenv("LENTA_STORE"),
 		DeliveryMode:   getEnvDefault("LENTA_DELIVERY_MODE", "pickup"),
 		Domain:         getEnvDefault("LENTA_DOMAIN", "moscow"),
+		UserAgent:      getEnvDefault("LENTA_USER_AGENT", ""),
+		BootstrapWait:  time.Duration(getEnvInt("LENTA_BOOTSTRAP_WAIT_SECONDS", 12)) * time.Second,
 		RequestTimeout: getEnvInt("REQUEST_TIMEOUT_SECONDS", 30),
 		PageLimit:      getEnvInt("LENTA_PAGE_LIMIT", 40),
 		RetryAttempts:  getEnvInt("RETRY_ATTEMPTS", 3),
@@ -58,23 +55,14 @@ func Load(envPath string) (*Config, error) {
 
 func (c *Config) validate() error {
 	missing := []string{}
-	if c.Cookie == "" {
-		missing = append(missing, "LENTA_COOKIE")
+	if c.ProxyURL == "" {
+		missing = append(missing, "PROXY_URL")
 	}
-	if c.DeviceID == "" {
-		missing = append(missing, "LENTA_DEVICE_ID")
-	}
-	if c.SessionToken == "" {
-		missing = append(missing, "LENTA_SESSION_TOKEN")
-	}
-	if c.UserSessionID == "" {
-		missing = append(missing, "LENTA_USER_SESSION_ID")
+	if c.StoreQuery == "" {
+		missing = append(missing, "LENTA_STORE")
 	}
 	if len(c.SelectionIDs) == 0 {
 		missing = append(missing, "LENTA_SELECTION_IDS")
-	}
-	if c.ProxyURL == "" {
-		missing = append(missing, "PROXY_URL")
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("missing required env vars: %s", strings.Join(missing, ", "))
